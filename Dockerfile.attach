@@ -20,7 +20,7 @@ WORKDIR /app
 
 # ── Stage 2: deps ────────────────────────────────────────────────────────────
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # alpine needs python3/make/g++ for native addons (better-sqlite3, node-pty)
 RUN apk add --no-cache python3 make g++
 RUN pnpm install --frozen-lockfile
