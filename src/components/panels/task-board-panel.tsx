@@ -418,6 +418,9 @@ export function TaskBoardPanel() {
     timeoutSeconds: 300
   })
   const [isSpawning, setIsSpawning] = useState(false)
+  /* attach-os override — real columns from DB (H5.6) */
+  const [boardColumns, setBoardColumns] = useState<Array<{ id: string; name: string; position: number; isDone?: boolean }>>([])
+
   const [gnapStatus, setGnapStatus] = useState<{ enabled: boolean; taskCount?: number; lastSync?: string } | null>(null)
   const [gnapSyncing, setGnapSyncing] = useState(false)
   const isLocal = dashboardMode === 'local'
@@ -514,6 +517,16 @@ export function TaskBoardPanel() {
     fetch('/api/gnap')
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setGnapStatus(data) })
+      .catch(() => {})
+  }, [])
+
+  /* attach-os override — fetch real kanban columns from DB (H5.6) */
+  useEffect(() => {
+    fetch('/api/columns')
+      .then(r => r.json())
+      .then((d: { columns?: Array<{ id: string; name: string; position: number; isDone?: boolean }> }) => {
+        if (Array.isArray(d.columns)) setBoardColumns(d.columns)
+      })
       .catch(() => {})
   }, [])
 
@@ -777,17 +790,6 @@ export function TaskBoardPanel() {
     )
   }
 
-  /* attach-os override — default columns until H5 DB layer */
-  const defaultBoardColumns = [
-    { id: 'inbox', name: 'Inbox', position: 0 },
-    { id: 'assigned', name: 'Assigned', position: 1 },
-    { id: 'awaiting_owner', name: 'Awaiting Owner', position: 2 },
-    { id: 'in_progress', name: 'In Progress', position: 3 },
-    { id: 'review', name: 'Review', position: 4 },
-    { id: 'quality_review', name: 'Quality Review', position: 5 },
-    { id: 'done', name: 'Done', position: 6, isDone: true },
-  ]
-
   /* attach-os override */
   const handleTaskMove = async (taskId: number, toColumnId: string) => {
     try {
@@ -961,7 +963,7 @@ export function TaskBoardPanel() {
       {/* attach-os override — Apple-style Kanban replaces old task list */}
       <KanbanBoard
         tasks={tasks}
-        columns={defaultBoardColumns}
+        columns={boardColumns}
         agents={agents.map(a => ({ id: a.name, name: a.name }))}
         projects={projects.map(p => ({ prefix: p.ticket_prefix, name: p.name }))}
         onTaskMove={handleTaskMove}
