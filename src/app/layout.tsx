@@ -8,10 +8,12 @@ import { THEME_IDS } from '@/lib/themes'
 import { ThemeBackground } from '@/components/ui/theme-background'
 import './globals.css'
 
+/* attach-os override — Inter Variable with optical sizing */
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
+  axes: ['opsz'],
 })
 
 const jetbrainsMono = JetBrains_Mono({
