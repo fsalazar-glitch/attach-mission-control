@@ -1,11 +1,12 @@
 'use client'
 
+/* attach-os override */
 import { useCallback, useEffect, useRef, useState, FormEvent } from 'react'
-import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { LanguageSwitcherSelect } from '@/components/ui/language-switcher'
 import { STORAGE_GATEWAY_URL } from '@/lib/device-identity'
+import { getBrandGradient } from '@/lib/theme/brand-gradient'
 
 interface GoogleCredentialResponse {
   credential?: string
@@ -290,24 +291,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-24 bg-background">
       <div className="absolute top-4 right-4">
         <LanguageSwitcherSelect />
       </div>
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-lg overflow-hidden bg-background border border-border/50 flex items-center justify-center mb-3">
-            <Image
-              src="/brand/mc-logo-128.png"
-              alt="Mission Control logo"
-              width={48}
-              height={48}
-              className="h-full w-full object-cover"
-              priority
-            />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground">{t('missionControl')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t('signInToContinue')}</p>
+      <div className="w-full max-w-md">
+        {/* Brand gradient icon */}
+        <div className="flex justify-center mb-12">
+          <div
+            className="w-16 h-16 rounded-2xl"
+            style={{ background: getBrandGradient() }}
+            aria-hidden
+          />
+        </div>
+        {/* Heading */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-semibold tracking-tight leading-[1.05] text-foreground mb-3">
+            Mission Control
+          </h1>
+          <p className="text-base text-muted-foreground">{t('signInToContinue')}</p>
         </div>
 
         {pendingApproval && (
@@ -541,6 +543,6 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-muted-foreground mt-6">{t('orchestrationTagline')}</p>
       </div>
-    </div>
+    </main>
   )
 }
