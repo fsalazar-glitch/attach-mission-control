@@ -93,3 +93,41 @@ export const fonts = {
   sans: 'var(--font-sans)',
   mono: 'var(--font-mono)',
 } as const
+
+// ---------------------------------------------------------------------------
+// attach-os override — TypeScript mirror of CSS variables (src/app/globals.css)
+// ---------------------------------------------------------------------------
+
+export const attachColors = {
+  light: {
+    background: '#F5F5F7',
+    foreground: '#1D1D1F',
+    card: '#FFFFFF',
+    primary: '#223ED7',   // Attach blue
+    accent: '#56308E',    // Attach purple
+    muted: '#6E6E73',     // Apple gray
+    border: '#D2D2D7',
+  },
+  dark: {
+    background: '#0A0B1F',
+    foreground: '#FFFFFF',
+    card: '#14143A',
+    primary: '#223ED7',
+    accent: '#7C5DC8',    // lighter purple for dark
+    mutedForeground: '#9CA3D9',
+    border: '#1F2050',
+  },
+} as const
+
+export const brandGradient = {
+  css: 'linear-gradient(135deg, #223ED7 0%, #56308E 100%)',
+  angle: 135,
+  from: '#223ED7',
+  to: '#56308E',
+} as const
+
+export const transition = {
+  fast: '150ms ease-out',
+  base: '250ms ease-out',
+  theme: '300ms ease-in-out',
+} as const
