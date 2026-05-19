@@ -1,0 +1,67 @@
+# Dockerfile.attach
+# Attach OS — production image for DigitalOcean Droplet
+#
+# NOTE: This is a simplified Dockerfile for the Attach OS fork.
+# The upstream Dockerfile (./Dockerfile) contains additional runtime
+# dependencies (node-pty, better-sqlite3 native modules, git, curl,
+# docker-entrypoint.sh) that may also be required if those features are
+# enabled in this fork. Review and merge as needed before go-live.
+#
+# Build:
+#   docker build -f Dockerfile.attach -t attach-os .
+#
+# Run (via compose):
+#   docker compose -f docker-compose.attach.yml up -d
+
+# ── Stage 1: base ────────────────────────────────────────────────────────────
+FROM node:22-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# ── Stage 2: deps ────────────────────────────────────────────────────────────
+FROM base AS deps
+COPY package.json pnpm-lock.yaml ./
+# alpine needs python3/make/g++ for native addons (better-sqlite3, node-pty)
+RUN apk add --no-cache python3 make g++
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: builder ─────────────────────────────────────────────────────────
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# next.config.js has output: 'standalone' — required for this Dockerfile
+RUN pnpm build
+
+# ── Stage 4: runner (minimal production image) ───────────────────────────────
+FROM base AS runner
+ENV NODE_ENV=production
+
+# Non-root user for security
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+
+WORKDIR /app
+
+# Copy standalone output (self-contained Node server, no node_modules needed)
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Copy DB schema so the app can initialise SQLite on first boot
+COPY --from=builder /app/src/lib/schema.sql ./src/lib/schema.sql
+
+# Persistent data directory — mapped to a Docker volume at runtime
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+
+# Health check — matches upstream logic
+RUN echo 'const http=require("http");const r=http.get("http://localhost:"+(process.env.PORT||3000)+"/api/status?action=health",s=>{process.exit(s.statusCode===200?0:1)});r.on("error",()=>process.exit(1));r.setTimeout(4000,()=>{r.destroy();process.exit(1)})' > /app/healthcheck.js
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD ["node", "/app/healthcheck.js"]
+
+CMD ["node", "server.js"]

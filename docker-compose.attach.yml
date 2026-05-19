@@ -1,0 +1,78 @@
+# docker-compose.attach.yml
+# Attach OS — DigitalOcean Droplet deployment via Docker + Tailscale
+#
+# USAGE:
+#   docker compose -f docker-compose.attach.yml up -d
+#
+# ACCESS:
+#   This app is NOT publicly exposed. Access is via Tailscale only:
+#   tailscale serve https / http://localhost:3000
+#
+# ENVIRONMENT:
+#   Copy .env.attach.example → .env and fill in secrets before first deploy.
+#   The .env file is gitignored and never committed.
+
+services:
+  attach-os:
+    build:
+      context: .
+      dockerfile: Dockerfile.attach
+    container_name: attach-os
+    # Port is NOT published to the host network interface.
+    # Tailscale `tailscale serve` connects directly to the container via the
+    # Docker bridge network — no public port exposure needed.
+    expose:
+      - "3000"
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      # --- Runtime config (can also be set in .env) ---
+
+      # Path inside the container where SQLite DB lives.
+      # Matches the volume mount ./data:/app/data below.
+      - DATABASE_PATH=/app/data/mission-control.db
+
+      # The Tailscale HTTPS URL for this machine, e.g.:
+      #   https://mission-control.tail-xyz.ts.net
+      # Set in .env as: NEXTAUTH_URL=https://mission-control.tail-xyz.ts.net
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+
+      # Random 32-char secret for NextAuth session signing.
+      # Generate with: openssl rand -base64 32
+      # Set in .env as: NEXTAUTH_SECRET=<generated value>
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+
+      # Always production inside the container.
+      - NODE_ENV=production
+
+      # Port the Next.js server listens on (keep at 3000).
+      - PORT=3000
+    volumes:
+      # SQLite persistence: survives image rebuilds and container restarts.
+      # Host path ./data is created automatically by Docker if absent.
+      - attach-data:/app/data
+    restart: unless-stopped
+    # Security hardening — same baseline as the upstream docker-compose.yml
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+          pids: 256
+
+volumes:
+  # Named volume so Docker manages the SQLite directory lifecycle.
+  # Data persists across `docker compose down` (use `down -v` to wipe).
+  attach-data:
+    name: attach-data
