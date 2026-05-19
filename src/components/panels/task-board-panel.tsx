@@ -15,6 +15,8 @@ import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { Button } from '@/components/ui/button'
 import { ProjectManagerModal } from '@/components/modals/project-manager-modal'
 import { SessionMessage, shouldShowTimestamp, type SessionTranscriptMessage } from '@/components/chat/session-message'
+/* attach-os override */
+import { KanbanBoard } from '@/components/attach/kanban-board'
 
 const log = createClientLogger('TaskBoard')
 
@@ -775,6 +777,31 @@ export function TaskBoardPanel() {
     )
   }
 
+  /* attach-os override — default columns until H5 DB layer */
+  const defaultBoardColumns = [
+    { id: 'inbox', name: 'Inbox', position: 0 },
+    { id: 'assigned', name: 'Assigned', position: 1 },
+    { id: 'awaiting_owner', name: 'Awaiting Owner', position: 2 },
+    { id: 'in_progress', name: 'In Progress', position: 3 },
+    { id: 'review', name: 'Review', position: 4 },
+    { id: 'quality_review', name: 'Quality Review', position: 5 },
+    { id: 'done', name: 'Done', position: 6, isDone: true },
+  ]
+
+  /* attach-os override */
+  const handleTaskMove = async (taskId: number, toColumnId: string) => {
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: toColumnId }),
+      })
+      storeSetTasks(tasks.map(t => t.id === taskId ? { ...t, status: toColumnId as Task['status'] } : t))
+    } catch (e) {
+      log.error('Failed to move task', e)
+    }
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -931,8 +958,17 @@ export function TaskBoardPanel() {
         </div>
       )}
 
-      {/* Kanban Board */}
-      <div className="flex-1 min-h-0 flex gap-4 p-4 overflow-x-auto" role="region" aria-label={t('taskBoard')}>
+      {/* attach-os override — Apple-style Kanban replaces old task list */}
+      <KanbanBoard
+        tasks={tasks}
+        columns={defaultBoardColumns}
+        agents={agents.map(a => ({ id: a.name, name: a.name }))}
+        projects={projects.map(p => ({ prefix: p.ticket_prefix, name: p.name }))}
+        onTaskMove={handleTaskMove}
+      />
+
+      {/* Kanban Board — original (kept for reference, superseded by KanbanBoard above) */}
+      {false && <div className="flex-1 min-h-0 flex gap-4 p-4 overflow-x-auto" role="region" aria-label={t('taskBoard')}>
         {statusColumns.map(column => (
           <div
             key={column.key}
@@ -1136,7 +1172,7 @@ export function TaskBoardPanel() {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Claude Code Tasks */}
       <ClaudeCodeTasksSection />
