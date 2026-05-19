@@ -23,7 +23,9 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # alpine needs python3/make/g++ for native addons (better-sqlite3, node-pty)
 RUN apk add --no-cache python3 make g++
-RUN pnpm install --frozen-lockfile
+# --ignore-scripts skips blocked build scripts; pnpm rebuild compiles native addons explicitly
+RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm rebuild better-sqlite3 esbuild @swc/core sharp node-pty @parcel/watcher unrs-resolver vue-demi
 
 # ── Stage 3: builder ─────────────────────────────────────────────────────────
 FROM base AS builder
