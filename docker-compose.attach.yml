@@ -27,9 +27,8 @@ services:
     environment:
       # --- Runtime config (can also be set in .env) ---
 
-      # Path inside the container where SQLite DB lives.
-      # Matches the volume mount ./data:/app/data below.
-      - DATABASE_PATH=/app/data/mission-control.db
+      # App stores DB + secrets in /app/.data (internal config, not DATABASE_PATH env).
+      # Volume is mounted at /app/.data — do not add DATABASE_PATH here.
 
       # The Tailscale HTTPS URL for this machine, e.g.:
       #   https://mission-control.tail-xyz.ts.net
@@ -47,16 +46,15 @@ services:
       # Port the Next.js server listens on (keep at 3000).
       - PORT=3000
     volumes:
-      # SQLite persistence: survives image rebuilds and container restarts.
-      # Host path ./data is created automatically by Docker if absent.
-      - attach-data:/app/data
+      # SQLite + secrets persistence: app stores both in /app/.data (internal default).
+      # Survives image rebuilds and container restarts.
+      - attach-data:/app/.data
     restart: unless-stopped
     # Security hardening — same baseline as the upstream docker-compose.yml
     read_only: true
     tmpfs:
       - /tmp
       - /app/.next/cache
-      - /app/.data
     cap_drop:
       - ALL
     cap_add:
