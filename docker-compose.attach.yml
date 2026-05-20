@@ -19,8 +19,10 @@ services:
     # Port is NOT published to the host network interface.
     # Tailscale `tailscale serve` connects directly to the container via the
     # Docker bridge network — no public port exposure needed.
-    expose:
-      - "3000"
+    # Bind only to loopback — Tailscale serve (host process) proxies this port.
+    # Not exposed to the public internet, only reachable via Tailscale.
+    ports:
+      - "127.0.0.1:3000:3000"
     env_file:
       - path: .env
         required: true
