@@ -14,9 +14,7 @@
 
 services:
   attach-os:
-    build:
-      context: .
-      dockerfile: Dockerfile.attach
+    image: attach-os:latest
     container_name: attach-os
     # Port is NOT published to the host network interface.
     # Tailscale `tailscale serve` connects directly to the container via the
