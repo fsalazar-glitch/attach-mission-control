@@ -23,9 +23,14 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # alpine needs python3/make/g++ for native addons (better-sqlite3, node-pty)
 RUN apk add --no-cache python3 make g++
-# pnpm-workspace.yaml declares onlyBuiltDependencies, so pnpm 10 allows
-# native addon build scripts (better-sqlite3, node-pty, etc.) during install.
-RUN pnpm install --frozen-lockfile
+# pnpm 10 blocks all build scripts by default (ERR_PNPM_IGNORED_BUILDS).
+# Install JS-only first, then compile native addons directly with node-gyp.
+RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN npm install -g node-gyp
+# better-sqlite3: bundles SQLite source in deps/, node-gyp compiles it
+RUN cd /app/node_modules/.pnpm/better-sqlite3@12.6.2/node_modules/better-sqlite3 && node-gyp rebuild
+# node-pty: PTY bindings
+RUN cd /app/node_modules/.pnpm/node-pty@1.1.0/node_modules/node-pty && node-gyp rebuild
 
 # ── Stage 3: builder ─────────────────────────────────────────────────────────
 FROM base AS builder
