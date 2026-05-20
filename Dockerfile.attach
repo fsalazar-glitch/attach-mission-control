@@ -51,8 +51,14 @@ COPY --from=builder /app/public ./public
 # Copy DB schema so the app can initialise SQLite on first boot
 COPY --from=builder /app/src/lib/schema.sql ./src/lib/schema.sql
 
-# Persistent data directory — mapped to a Docker volume at runtime
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+# Native addons: Next.js standalone tracer omits .node binaries.
+# Copy full packages from deps so the compiled binaries are available at runtime.
+COPY --from=deps /app/node_modules/.pnpm/better-sqlite3@12.6.2/node_modules/better-sqlite3 ./node_modules/.pnpm/better-sqlite3@12.6.2/node_modules/better-sqlite3
+COPY --from=deps /app/node_modules/.pnpm/node-pty@1.1.0/node_modules/node-pty ./node_modules/.pnpm/node-pty@1.1.0/node_modules/node-pty
+
+# Persistent data directories — /app/data mapped to a Docker volume at runtime
+# /app/.data used by the app for auto-generated secrets (tmpfs in compose)
+RUN mkdir -p /app/data /app/.data && chown nextjs:nodejs /app/data /app/.data
 
 # Health check — matches upstream logic
 RUN echo 'const http=require("http");const r=http.get("http://localhost:"+(process.env.PORT||3000)+"/api/status?action=health",s=>{process.exit(s.statusCode===200?0:1)});r.on("error",()=>process.exit(1));r.setTimeout(4000,()=>{r.destroy();process.exit(1)})' > /app/healthcheck.js
