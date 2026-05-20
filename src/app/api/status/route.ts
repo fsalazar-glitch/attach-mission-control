@@ -401,6 +401,9 @@ async function getGatewayStatus() {
 
   try {
     gatewayStatus.port_listening = await isPortOpen(config.gatewayHost, config.gatewayPort)
+    // When gateway runs in a separate container/process, ps won't find it.
+    // Port reachability is the authoritative signal in that case.
+    if (gatewayStatus.port_listening) gatewayStatus.running = true
   } catch (error) {
     logger.error({ err: error }, 'Error checking port')
   }
