@@ -51,7 +51,7 @@ services:
       # Gateway runs in host-network mode on :18789; UFW allows tailscale0 → 18789.
       - OPENCLAW_GATEWAY_HOST=172.19.0.1
       - OPENCLAW_GATEWAY_PORT=18789
-      - NEXT_PUBLIC_GATEWAY_URL=ws://pepper-prod-01.tail716af4.ts.net:18789
+      - NEXT_PUBLIC_GATEWAY_URL=wss://pepper-prod-01.tail716af4.ts.net:18789
     volumes:
       # SQLite + secrets persistence: app stores both in /app/.data (internal default).
       # Survives image rebuilds and container restarts.
